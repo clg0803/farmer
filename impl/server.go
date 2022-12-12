@@ -57,6 +57,10 @@ func (s *Server) listenAndServe() {
 	}
 }
 
+func NewServer(name string) iface.IServer {
+	return &Server{Name: name, IPVersion: "tcp4", IP: "0.0.0.0", Port: 8848}
+}
+
 // bind each connection with this function
 // will customize it(say in CLIENT) in future
 func wb(conn *net.TCPConn, data []byte, length int) error {
@@ -66,8 +70,4 @@ func wb(conn *net.TCPConn, data []byte, length int) error {
 	}
 	fmt.Println(":[SUCCESS]: CALLBACK FUNC FINISHED")
 	return nil
-}
-
-func NewServer(name string) iface.IServer {
-	return &Server{Name: name, IPVersion: "tcp4", IP: "0.0.0.0", Port: 8848}
 }
