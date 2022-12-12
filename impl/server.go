@@ -43,30 +43,29 @@ func (s *Server) listenAndServe() {
 		return
 	}
 	fmt.Println(":[START]: FARMER <", s.Name, "> BEGIN TO LABOR, NOW LISTENING ... ")
+	var connID uint32 = 0
 	for {
 		conn, err := listener.AcceptTCP()
 		if err != nil {
 			fmt.Print(":[ERR]: ACCEPT FAILED ", err)
 			continue
 		}
-		// TODO:
-		go s.work(conn)
+		// create a 'connection' obj and bind task to it
+		estConn := NewConnection(conn, connID, wb) // assume no bug in NewConnection()
+		go estConn.Start()
+		connID++
 	}
 }
 
-func (s *Server) work(conn *net.TCPConn) {
-	for {
-		buf := make([]byte, 512)
-		cnt, err := conn.Read(buf)
-		if err != nil {
-			fmt.Println(":[ERR]: READ ERR", err)
-			continue
-		}
-		if _, err := conn.Write(buf[:cnt]); err != nil {
-			fmt.Println(":[ERR]: ERR WHEN WRITE BACK TO CLIENT", err)
-			continue
-		}
+// bind each connection with this function
+// will customize it(say in CLIENT) in future
+func wb(conn *net.TCPConn, data []byte, length int) error {
+	if _, err := conn.Write(data[:length]); err != nil {
+		fmt.Println(":[ERR]: ERR WHEN WRITE BACK TO CLIENT", err)
+		return err
 	}
+	fmt.Println(":[SUCCESS]: CALLBACK FUNC FINISHED")
+	return nil
 }
 
 func NewServer(name string) iface.IServer {

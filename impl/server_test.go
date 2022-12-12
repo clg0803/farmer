@@ -8,15 +8,15 @@ import (
 )
 
 func Client() {
-	fmt.Println("Client...")
-	time.Sleep(3 * time.Second)
-	conn, err := net.Dial("tcp", "127.0.0.1:8848")
-	if err != nil {
-		fmt.Println(":<ERR>: ERR CREATE CONN ", err)
-		return
-	}
-	for {
-		_, err := conn.Write([]byte("Hello Framer"))
+	for i := 0; i < 5; i++ {
+		fmt.Println("<Client> connect ... ")
+		time.Sleep(1 * time.Second)
+		conn, err := net.Dial("tcp", "127.0.0.1:8848")
+		if err != nil {
+			fmt.Println(":<ERR>: ERR CREATE CONN ", err)
+			return
+		}
+		_, err = conn.Write([]byte("Hello Framer"))
 		if err != nil {
 			fmt.Println(":<ERR>: ERR WRITE TO SERVER ", err)
 			return
@@ -33,7 +33,7 @@ func Client() {
 }
 
 func TestSever(t *testing.T) {
-	s := NewServer("[farmer v0.1]")
+	s := NewServer("[farmer v0.2]")
 	go Client()
-	s.Serve()
+	s.Serve() // don't end
 }
