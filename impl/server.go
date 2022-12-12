@@ -12,6 +12,7 @@ type Server struct {
 	IPVersion string
 	IP        string
 	Port      int
+	Router    iface.IRouter
 }
 
 func (s *Server) Start() {
@@ -21,14 +22,21 @@ func (s *Server) Start() {
 
 func (s *Server) Stop() {
 	fmt.Println(":[STOP]: Server: ", s.Name)
+	// TODO: clean up other info...
 }
 
 func (s *Server) Serve() {
 	s.Start()
 	// TODO: serve()
+	// do sth. while handling requests
 	for {
 		time.Sleep(10 * time.Second)
 	}
+}
+
+func (s *Server) AddRouter(r iface.IRouter) {
+	s.Router = r
+	fmt.Println(":[SUCCESS]: ADD A NEW ROUTER!")
 }
 
 func (s *Server) listenAndServe() {
@@ -51,23 +59,18 @@ func (s *Server) listenAndServe() {
 			continue
 		}
 		// create a 'connection' obj and bind task to it
-		estConn := NewConnection(conn, connID, wb) // assume no bug in NewConnection()
+		estConn := NewConnection(conn, connID, s.Router) // assume no bug in NewConnection()
 		go estConn.Start()
 		connID++
 	}
 }
 
 func NewServer(name string) iface.IServer {
-	return &Server{Name: name, IPVersion: "tcp4", IP: "0.0.0.0", Port: 8848}
-}
-
-// bind each connection with this function
-// will customize it(say in CLIENT) in future
-func wb(conn *net.TCPConn, data []byte, length int) error {
-	if _, err := conn.Write(data[:length]); err != nil {
-		fmt.Println(":[ERR]: ERR WHEN WRITE BACK TO CLIENT", err)
-		return err
+	return &Server{
+		Name:      name,
+		IPVersion: "tcp4",
+		IP:        "0.0.0.0",
+		Port:      8848,
+		Router:    nil,
 	}
-	fmt.Println(":[SUCCESS]: CALLBACK FUNC FINISHED")
-	return nil
 }

@@ -11,7 +11,7 @@ type Connection struct {
 	connID   uint32
 	isClosed bool
 	exitChan chan bool
-	farm     iface.ToHandle
+	router   iface.IRouter
 }
 
 // Start -- work for each connection
@@ -19,7 +19,12 @@ type Connection struct {
 func (c *Connection) Start() {
 	fmt.Println(":[START]: CONN_ID = ", c.connID)
 	c.readAndHandle()
-	c.Send(nil)
+	for {
+		select {
+		case <-c.exitChan:
+			return
+		}
+	}
 }
 
 func (c *Connection) Stop() {
@@ -55,25 +60,30 @@ func (c *Connection) readAndHandle() {
 	defer fmt.Println(":[SUCCESS]: stop READING from ", c.GetRemoteAddr().String())
 	for {
 		buf := make([]byte, 512)
-		cnt, err := c.conn.Read(buf)
+		_, err := c.conn.Read(buf)
 		if err != nil {
 			fmt.Println(":[ERR]: READ ERR", err)
+			c.exitChan <- true
 			continue
 		}
-		// invoke `farm()` to handle
-		if err := c.farm(&c.conn, buf, cnt); err != nil {
-			fmt.Println(":[ERR]: FAILED TO HANDLE ", c.connID)
-			fmt.Println(err)
-			break
+		// apply Router.Before()...
+		req := Request{
+			conn: c,
+			data: buf,
 		}
+		go func(r iface.IRequest) {
+			c.router.Before(r)
+			c.router.Handle(r)
+			c.router.After(r)
+		}(&req)
 	}
 }
 
-func NewConnection(tcpConn *net.TCPConn, connID uint32, toHandle iface.ToHandle) *Connection {
+func NewConnection(tcpConn *net.TCPConn, connID uint32, rou iface.IRouter) *Connection {
 	return &Connection{
 		conn:   *tcpConn,
 		connID: connID,
-		farm:   toHandle,
+		router: rou,
 
 		isClosed: false,
 		exitChan: make(chan bool, 1),
