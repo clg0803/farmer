@@ -19,24 +19,8 @@ func (p *PingRouter) Before(req iface.IRequest) {
 	}
 }
 
-func (p *PingRouter) Handle(req iface.IRequest) {
-	fmt.Println("CALL OF HANDLE_FUNCTION")
-	_, err := req.GetConnection().GetTcpConnection().Write([]byte("handler_function ... "))
-	if err != nil {
-		fmt.Println(":[ERR]: HANDLE_FUNCTION")
-	}
-}
-
-func (p *PingRouter) After(req iface.IRequest) {
-	fmt.Println("CALL OF AFTER_FUNCTION")
-	_, err := req.GetConnection().GetTcpConnection().Write([]byte("after_function ... "))
-	if err != nil {
-		fmt.Println(":[ERR]: AFTER_FUNCTION")
-	}
-}
-
 func main() {
-	s := impl.NewServer("[farmer v0.3]")
+	s := impl.NewServer("farmer0.4")
 	s.AddRouter(&PingRouter{})
 	s.Serve()
 }

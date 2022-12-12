@@ -13,6 +13,9 @@ type Server struct {
 	IP        string
 	Port      int
 	Router    iface.IRouter
+
+	MaxConn     int
+	MaxPackSize int
 }
 
 func (s *Server) Start() {
@@ -51,6 +54,10 @@ func (s *Server) listenAndServe() {
 		return
 	}
 	fmt.Println(":[START]: FARMER <", s.Name, "> BEGIN TO LABOR, NOW LISTENING ... ")
+	fmt.Printf(":[CONF]: IPVERSION:%s ADDR:%s PORT:%d MAX_CONN:%d MAX_PACKSIZE:%d \n",
+		s.IPVersion, s.IP, s.Port, s.MaxConn, s.MaxPackSize,
+	)
+
 	var connID uint32 = 0
 	for {
 		conn, err := listener.AcceptTCP()
@@ -67,10 +74,12 @@ func (s *Server) listenAndServe() {
 
 func NewServer(name string) iface.IServer {
 	return &Server{
-		Name:      name,
-		IPVersion: "tcp4",
-		IP:        "0.0.0.0",
-		Port:      8848,
-		Router:    nil,
+		Name:        name,
+		IPVersion:   "tcp4",
+		IP:          "127.0.0.1",
+		Port:        8848,
+		Router:      nil,
+		MaxConn:     1024,
+		MaxPackSize: 1460,
 	}
 }

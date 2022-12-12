@@ -33,7 +33,5 @@ func Client() {
 }
 
 func TestSever(t *testing.T) {
-	s := NewServer("[farmer v0.2]")
-	go Client()
-	s.Serve() // don't end
+	Client()
 }
