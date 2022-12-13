@@ -80,6 +80,6 @@ func NewServer(name string) iface.IServer {
 		Port:        8848,
 		Router:      nil,
 		MaxConn:     1024,
-		MaxPackSize: 1460,
+		MaxPackSize: 65535,
 	}
 }
