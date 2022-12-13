@@ -4,5 +4,6 @@ package iface
 // contains Connection and associated data
 type IRequest interface {
 	GetConnection() IConnection
-	GetData() []byte
+	GetMsgData() []byte
+	GetMsgID() uint32
 }

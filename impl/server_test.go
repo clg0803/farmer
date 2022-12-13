@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
+// implement CLIENT
+
 func Client() {
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 3; i++ {
 		fmt.Println("<Client> connect ... ")
 		time.Sleep(1 * time.Second)
 		conn, err := net.Dial("tcp", "127.0.0.1:8848")
@@ -16,31 +18,22 @@ func Client() {
 			fmt.Println(":<ERR>: ERR CREATE CONN ", err)
 			return
 		}
-		packer := NewPacker()
-		msg1 := &Message{
-			id:      0,
-			dataLen: 5,
-			data:    []byte{'h', 'e', 'l', 'l', 'o'},
-		}
-		ds1, err := packer.Pack(msg1)
-		if err != nil {
-			fmt.Println(":<ERR>: CLIENT PACKING ERR", err)
-			return
-		}
-		msg2 := &Message{
-			id:      1,
-			dataLen: 4,
-			data:    []byte{'n', 'i', 'h', 'o'},
-		}
-		ds2, err := packer.Pack(msg2)
-		if err != nil {
-			fmt.Println(":<ERR>: CLIENT PACKING ERR", err)
-			return
-		}
 
-		ds := append(ds1, ds2...)
-		conn.Write(ds)
-		time.Sleep(1 * time.Second)
+		packer := NewPacker()
+		data, _ := packer.Pack(NewMessage(uint32(i), []byte("Client try to connect")))
+		_, err = conn.Write(data)
+		if err != nil {
+			fmt.Println(":<ERR>: CLIENT WRITE ERR")
+			return
+		}
+		msg, err := packer.ReadAndUnpackToMsg(NewConnection(conn.(*net.TCPConn), 1001, nil))
+		if err != nil {
+			fmt.Println(":<ERR>: COVERT DATA TO MSG ERR", err)
+			continue
+		}
+		fmt.Printf(":<SUCCESS>: RECV FROM SERVER, MSG ID = %d,\n DATA = %s\n",
+			msg.MsgID(), string(msg.Data()),
+		)
 	}
 }
 

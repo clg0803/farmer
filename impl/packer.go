@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"farmer/iface"
+	"fmt"
+	"io"
 )
 
 var MaxPackSize uint32 = 65535
@@ -48,6 +50,30 @@ func (p *Packer) Unpack(rd []byte) (iface.IMessage, error) {
 	}
 	if msg.dataLen > MaxPackSize {
 		return nil, errors.New(":[ERR]: TWO LARGE MSG DATA RECEIVED")
+	}
+	return msg, nil
+}
+
+func (p *Packer) ReadAndUnpackToMsg(c *Connection) (iface.IMessage, error) {
+	headData := make([]byte, p.HeaderLen())
+	if _, err := io.ReadFull(c.GetTcpConnection(), headData); err != nil {
+		fmt.Println(":[ERR]: READ HEADER ERR", err)
+		c.exitChan <- true
+		return nil, err
+	}
+	msg, err := p.Unpack(headData)
+	if err != nil {
+		fmt.Println(":[ERR]: UNPACK HEADER ERR", err)
+		c.exitChan <- true
+		return nil, err
+	}
+	if msg.DataLen() > 0 {
+		msg.SetData(make([]byte, msg.DataLen()))
+		if _, err := io.ReadFull(c.GetTcpConnection(), msg.Data()); err != nil {
+			fmt.Println(":[ERR]: UNPACK DATA ERR", err)
+			c.exitChan <- true
+			return nil, err
+		}
 	}
 	return msg, nil
 }

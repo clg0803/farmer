@@ -6,13 +6,17 @@ import (
 
 type Request struct {
 	conn iface.IConnection
-	data []byte
+	msg  iface.IMessage
 }
 
 func (r *Request) GetConnection() iface.IConnection {
 	return r.conn
 }
 
-func (r *Request) GetData() []byte {
-	return r.data
+func (r *Request) GetMsgData() []byte {
+	return r.msg.Data()
+}
+
+func (r *Request) GetMsgID() uint32 {
+	return r.msg.MsgID()
 }

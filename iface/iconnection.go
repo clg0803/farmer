@@ -9,8 +9,8 @@ type IConnection interface {
 	Stop()
 	GetTcpConnection() *net.TCPConn // get TCP connection bind with it
 	GetConnectionID() uint32
-	GetRemoteAddr() net.Addr // get remote(client) addr
-	Send(data []byte) error
+	GetRemoteAddr() net.Addr                 // get remote(client) addr
+	SendMsg(msgID uint32, data []byte) error // send MSG to CLIENT
 }
 
 type ToHandle func(conn *net.TCPConn, data []byte, length int) error //Client register ToHandle() with an IConnection

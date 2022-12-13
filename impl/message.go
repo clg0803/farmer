@@ -30,7 +30,7 @@ func (m *Message) SetMsgID(id uint32) {
 	m.id = id
 }
 
-func NewMessage(data []byte, id uint32) *Message {
+func NewMessage(id uint32, data []byte) *Message {
 	return &Message{
 		id:      id,
 		data:    data,

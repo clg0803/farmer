@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"errors"
 	"farmer/iface"
 	"fmt"
 	"net"
@@ -49,7 +50,21 @@ func (c *Connection) GetRemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
-func (c *Connection) Send(data []byte) error {
+func (c *Connection) SendMsg(msgID uint32, data []byte) error {
+	if c.isClosed {
+		return errors.New(":[ERR]: CONNECTION CLOSED BEFORE SENDING MSG")
+	}
+	pker := NewPacker()
+	msg, err := pker.Pack(NewMessage(msgID, data))
+	if err != nil {
+		fmt.Println(":[ERR]: PACK ERR, MSG ID = ", msgID)
+		return errors.New(":[ERR]: PACK ERR")
+	}
+	if _, err := c.conn.Write(msg); err != nil {
+		fmt.Println(":[ERR]: SEND BACK MSG ERR, MSG ID = ", msgID)
+		c.exitChan <- true
+		return errors.New(":[ERR]: SEND BACK ERR")
+	}
 	return nil
 }
 
@@ -57,19 +72,18 @@ func (c *Connection) Send(data []byte) error {
 func (c *Connection) readAndHandle() {
 	fmt.Println(":[SUCCESS]: START READING ...")
 	defer c.Stop() // in case of failing
-	defer fmt.Println(":[SUCCESS]: stop READING from ", c.GetRemoteAddr().String())
+	defer fmt.Println(":[SUCCESS]: STOP READING FROM ", c.GetRemoteAddr().String())
 	for {
-		buf := make([]byte, 512)
-		_, err := c.conn.Read(buf)
+		pker := NewPacker()
+		msg, err := pker.ReadAndUnpackToMsg(c)
 		if err != nil {
-			fmt.Println(":[ERR]: READ ERR", err)
-			c.exitChan <- true
+			fmt.Println(":[ERR]: COVERT DATA TO MSG ERR", err)
 			continue
 		}
 		// apply Router.Before()...
 		req := Request{
 			conn: c,
-			data: buf,
+			msg:  msg,
 		}
 		go func(r iface.IRequest) {
 			c.router.Before(r)
