@@ -8,11 +8,11 @@ import (
 )
 
 type Server struct {
-	Name      string
-	IPVersion string
-	IP        string
-	Port      int
-	Router    iface.IRouter
+	Name       string
+	IPVersion  string
+	IP         string
+	Port       int
+	msgHandler iface.IMsgHandler
 
 	MaxConn     int
 	MaxPackSize int
@@ -37,8 +37,8 @@ func (s *Server) Serve() {
 	}
 }
 
-func (s *Server) AddRouter(r iface.IRouter) {
-	s.Router = r
+func (s *Server) AddRouter(msgId uint32, r iface.IRouter) {
+	s.msgHandler.AddRouter(msgId, r)
 	fmt.Println(":[SUCCESS]: ADD A NEW ROUTER!")
 }
 
@@ -66,7 +66,7 @@ func (s *Server) listenAndServe() {
 			continue
 		}
 		// create a 'connection' obj and bind task to it
-		estConn := NewConnection(conn, connID, s.Router) // assume no bug in NewConnection()
+		estConn := NewConnection(conn, connID, s.msgHandler) // assume no bug in NewConnection()
 		go estConn.Start()
 		connID++
 	}
@@ -74,11 +74,12 @@ func (s *Server) listenAndServe() {
 
 func NewServer(name string) iface.IServer {
 	return &Server{
-		Name:        name,
-		IPVersion:   "tcp4",
-		IP:          "127.0.0.1",
-		Port:        8848,
-		Router:      nil,
+		Name:       name,
+		IPVersion:  "tcp4",
+		IP:         "127.0.0.1",
+		Port:       8848,
+		msgHandler: NewMsgHandler(),
+
 		MaxConn:     1024,
 		MaxPackSize: 65535,
 	}

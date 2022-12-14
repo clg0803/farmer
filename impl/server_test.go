@@ -10,7 +10,7 @@ import (
 // implement CLIENT
 
 func Client() {
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 2; i++ {
 		fmt.Println("<Client> connect ... ")
 		time.Sleep(1 * time.Second)
 		conn, err := net.Dial("tcp", "127.0.0.1:8848")

@@ -12,7 +12,8 @@ type Connection struct {
 	connID   uint32
 	isClosed bool
 	exitChan chan bool
-	router   iface.IRouter
+
+	msgHandler iface.IMsgHandler
 }
 
 // Start -- work for each connection
@@ -80,24 +81,19 @@ func (c *Connection) readAndHandle() {
 			fmt.Println(":[ERR]: COVERT DATA TO MSG ERR", err)
 			continue
 		}
-		// apply Router.Before()...
 		req := Request{
 			conn: c,
 			msg:  msg,
 		}
-		go func(r iface.IRequest) {
-			c.router.Before(r)
-			c.router.Handle(r)
-			c.router.After(r)
-		}(&req)
+		go c.msgHandler.HandleRequest(&req)
 	}
 }
 
-func NewConnection(tcpConn *net.TCPConn, connID uint32, rou iface.IRouter) *Connection {
+func NewConnection(tcpConn *net.TCPConn, connID uint32, msgHandler iface.IMsgHandler) *Connection {
 	return &Connection{
-		conn:   *tcpConn,
-		connID: connID,
-		router: rou,
+		conn:       *tcpConn,
+		connID:     connID,
+		msgHandler: msgHandler,
 
 		isClosed: false,
 		exitChan: make(chan bool, 1),

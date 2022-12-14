@@ -3,6 +3,7 @@ package impl
 import (
 	"farmer/iface"
 	"fmt"
+	"strconv"
 )
 
 type MsgHandler struct {
@@ -11,7 +12,7 @@ type MsgHandler struct {
 
 func (mh *MsgHandler) AddRouter(msgId uint32, router iface.IRouter) {
 	if _, ok := mh.routerTable[msgId]; ok {
-		panic(":[FETAL]: REPEATED ROUTER, MSG_ID = " + string(int(msgId)))
+		panic(":[FETAL]: REPEATED ROUTER, MSG_ID = " + strconv.Itoa(int(msgId)))
 	}
 	mh.routerTable[msgId] = router
 	fmt.Println(":[SUCCESS]: ADD ROUTER, MSG_ID = ", msgId)
