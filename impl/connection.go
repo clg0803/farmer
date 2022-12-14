@@ -123,7 +123,7 @@ func (c *Connection) startWriter() {
 		case data, ok := <-c.msgBuffChan:
 			if ok {
 				if _, err := c.conn.Write(data); err != nil {
-					fmt.Println(":[ERR]: WRITING TO CLIENT ERR, ", err)
+					fmt.Println(":[ERR]: SENDING BUFFED DATA ERR, ", err)
 					return
 				}
 			} else {
@@ -148,6 +148,8 @@ func NewConnection(s iface.IServer, tcpConn *net.TCPConn, connID uint32, msgHand
 		isClosed: false,
 		exitChan: make(chan bool, 1),
 	}
-	c.server.GetConnMgr().Add(&c)
+	if c.server != nil {
+		c.server.GetConnMgr().Add(&c)
+	}
 	return &c
 }
