@@ -43,6 +43,7 @@ func (s *Server) AddRouter(msgId uint32, r iface.IRouter) {
 }
 
 func (s *Server) listenAndServe() {
+	s.msgHandler.AddWorkers()
 	addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 	if err != nil {
 		fmt.Println(":[ERR]: RESOLVE TCP ADDR ", err)
@@ -78,7 +79,7 @@ func NewServer(name string) iface.IServer {
 		IPVersion:  "tcp4",
 		IP:         "127.0.0.1",
 		Port:       8848,
-		msgHandler: NewMsgHandler(),
+		msgHandler: NewMsgHandler(5, 1024),
 
 		MaxConn:     1024,
 		MaxPackSize: 65535,

@@ -84,7 +84,7 @@ func (c *Connection) readAndHandle() {
 			conn: c,
 			msg:  msg,
 		}
-		go c.msgHandler.HandleRequest(&req)
+		c.msgHandler.SendMsgToTaskQueue(&req)
 	}
 }
 

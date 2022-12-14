@@ -7,7 +7,10 @@ import (
 )
 
 type MsgHandler struct {
-	routerTable map[uint32]iface.IRouter
+	routerTable    map[uint32]iface.IRouter
+	WorkerPoolSize uint32
+	taskQueue      []chan iface.IRequest // one worker has one taskQueue
+	TaskQueueSize  uint32
 }
 
 func (mh *MsgHandler) AddRouter(msgId uint32, router iface.IRouter) {
@@ -29,8 +32,37 @@ func (mh *MsgHandler) HandleRequest(r iface.IRequest) {
 	handler.After(r)
 }
 
-func NewMsgHandler() *MsgHandler {
+func (mh *MsgHandler) AddWorkers() {
+	for i := 0; i < int(mh.WorkerPoolSize); i++ {
+		// one worker is mapped to one task queue
+		mh.taskQueue[i] = make(chan iface.IRequest, mh.TaskQueueSize)
+		go mh.startAWorker(i, &mh.taskQueue[i])
+	}
+}
+
+func (mh *MsgHandler) SendMsgToTaskQueue(r iface.IRequest) {
+	workerID := r.GetConnection().GetConnectionID() % mh.WorkerPoolSize
+	mh.taskQueue[workerID] <- r
+	fmt.Println(":[SUCCESS]: ADD TO A WORKER, ID = ", workerID,
+		"CONNECTION ID = ", r.GetConnection().GetConnectionID(),
+		"MESSAGE ID = ", r.GetMsgID())
+}
+
+func (mh *MsgHandler) startAWorker(workerId int, tq *chan iface.IRequest) {
+	fmt.Println(":[SUCCESS]: WORKER START, ID = ", workerId)
+	for {
+		select {
+		case req := <-*tq:
+			mh.HandleRequest(req)
+		}
+	}
+}
+
+func NewMsgHandler(ps, ts uint32) *MsgHandler {
 	return &MsgHandler{
-		routerTable: make(map[uint32]iface.IRouter),
+		routerTable:    make(map[uint32]iface.IRouter),
+		WorkerPoolSize: ps,
+		taskQueue:      make([]chan iface.IRequest, ps),
+		TaskQueueSize:  ts,
 	}
 }
