@@ -17,6 +17,9 @@ type Server struct {
 
 	MaxConn     int32
 	MaxPackSize int32
+
+	onConnStart func(conn iface.IConnection)
+	onConnEnd   func(conn iface.IConnection)
 }
 
 func (s *Server) Start() {
@@ -45,6 +48,28 @@ func (s *Server) AddRouter(msgId uint32, r iface.IRouter) {
 
 func (s *Server) GetConnMgr() iface.IConnectManager {
 	return &s.connManager
+}
+
+func (s *Server) SetOnConnStart(f func(iface.IConnection)) {
+	s.onConnStart = f
+}
+
+func (s *Server) SetOnConnEnd(f func(iface.IConnection)) {
+	s.onConnEnd = f
+}
+
+func (s *Server) CallOnConnStart(c iface.IConnection) {
+	if s.onConnStart != nil {
+		fmt.Println(":[SUCCESS]: CALL ON CONNECTION START...")
+		s.onConnStart(c)
+	}
+}
+
+func (s *Server) CallOnConnEnd(c iface.IConnection) {
+	if s.onConnEnd != nil {
+		fmt.Println(":[SUCCESS]: CALL ON CONNECTION END...")
+		s.onConnEnd(c)
+	}
 }
 
 func (s *Server) listenAndServe() {

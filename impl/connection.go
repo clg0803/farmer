@@ -25,6 +25,7 @@ func (c *Connection) Start() {
 	fmt.Println(":[START]: CONN_ID = ", c.connID)
 	go c.readAndHandle()
 	go c.startWriter()
+	c.server.CallOnConnStart(c)
 	for {
 		select {
 		case <-c.exitChan:
@@ -39,6 +40,7 @@ func (c *Connection) Stop() {
 		return
 	}
 	c.isClosed = true
+	c.server.CallOnConnEnd(c)
 	c.conn.Close()
 	c.exitChan <- true
 	c.server.GetConnMgr().Remove(c)
