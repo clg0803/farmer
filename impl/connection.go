@@ -13,14 +13,16 @@ type Connection struct {
 	isClosed bool
 	exitChan chan bool
 
-	msgHandler iface.IMsgHandler
+	msgHandler iface.IMsgHandler // for R/W separated
+	msgChan    chan []byte
 }
 
 // Start -- work for each connection
 // use `go c.Start()` to invoke
 func (c *Connection) Start() {
 	fmt.Println(":[START]: CONN_ID = ", c.connID)
-	c.readAndHandle()
+	go c.readAndHandle()
+	go c.startWriter()
 	for {
 		select {
 		case <-c.exitChan:
@@ -61,11 +63,8 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 		fmt.Println(":[ERR]: PACK ERR, MSG ID = ", msgID)
 		return errors.New(":[ERR]: PACK ERR")
 	}
-	if _, err := c.conn.Write(msg); err != nil {
-		fmt.Println(":[ERR]: SEND BACK MSG ERR, MSG ID = ", msgID)
-		c.exitChan <- true
-		return errors.New(":[ERR]: SEND BACK ERR")
-	}
+	// write to msgChan, let writer do
+	c.msgChan <- msg
 	return nil
 }
 
@@ -89,11 +88,28 @@ func (c *Connection) readAndHandle() {
 	}
 }
 
+func (c *Connection) startWriter() {
+	fmt.Println(":[SUCCESS]: CO-WRITER START ...")
+	defer fmt.Println(":[SUCCESS]: WRITING TO <", c.GetRemoteAddr(), "> FINISHED, WRITER EXITS")
+	for {
+		select {
+		case data := <-c.msgChan:
+			if _, err := c.conn.Write(data); err != nil {
+				fmt.Println(":[ERR]: WRITING TO CLIENT ERR, ", err)
+				return
+			}
+		case <-c.exitChan:
+			return
+		}
+	}
+}
+
 func NewConnection(tcpConn *net.TCPConn, connID uint32, msgHandler iface.IMsgHandler) *Connection {
 	return &Connection{
 		conn:       *tcpConn,
 		connID:     connID,
 		msgHandler: msgHandler,
+		msgChan:    make(chan []byte),
 
 		isClosed: false,
 		exitChan: make(chan bool, 1),
