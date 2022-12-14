@@ -8,6 +8,7 @@ import (
 )
 
 type Connection struct {
+	server   iface.IServer
 	conn     net.TCPConn
 	connID   uint32
 	isClosed bool
@@ -38,6 +39,9 @@ func (c *Connection) Stop() {
 	}
 	c.isClosed = true
 	c.conn.Close()
+	c.exitChan <- true
+	c.server.GetConnMgr().Remove(c)
+	close(c.msgChan)
 	close(c.exitChan)
 }
 
@@ -104,8 +108,9 @@ func (c *Connection) startWriter() {
 	}
 }
 
-func NewConnection(tcpConn *net.TCPConn, connID uint32, msgHandler iface.IMsgHandler) *Connection {
-	return &Connection{
+func NewConnection(s iface.IServer, tcpConn *net.TCPConn, connID uint32, msgHandler iface.IMsgHandler) *Connection {
+	c := Connection{
+		server:     s,
 		conn:       *tcpConn,
 		connID:     connID,
 		msgHandler: msgHandler,
@@ -114,4 +119,6 @@ func NewConnection(tcpConn *net.TCPConn, connID uint32, msgHandler iface.IMsgHan
 		isClosed: false,
 		exitChan: make(chan bool, 1),
 	}
+	c.server.GetConnMgr().Add(&c)
+	return &c
 }

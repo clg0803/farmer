@@ -8,14 +8,15 @@ import (
 )
 
 type Server struct {
-	Name       string
-	IPVersion  string
-	IP         string
-	Port       int
-	msgHandler iface.IMsgHandler
+	Name        string
+	IPVersion   string
+	IP          string
+	Port        int
+	msgHandler  iface.IMsgHandler
+	connManager ConnManager
 
-	MaxConn     int
-	MaxPackSize int
+	MaxConn     int32
+	MaxPackSize int32
 }
 
 func (s *Server) Start() {
@@ -25,7 +26,7 @@ func (s *Server) Start() {
 
 func (s *Server) Stop() {
 	fmt.Println(":[STOP]: Server: ", s.Name)
-	// TODO: clean up other info...
+	s.connManager.CleanAllConn()
 }
 
 func (s *Server) Serve() {
@@ -40,6 +41,10 @@ func (s *Server) Serve() {
 func (s *Server) AddRouter(msgId uint32, r iface.IRouter) {
 	s.msgHandler.AddRouter(msgId, r)
 	fmt.Println(":[SUCCESS]: ADD A NEW ROUTER!")
+}
+
+func (s *Server) GetConnMgr() iface.IConnectManager {
+	return &s.connManager
 }
 
 func (s *Server) listenAndServe() {
@@ -66,8 +71,12 @@ func (s *Server) listenAndServe() {
 			fmt.Print(":[ERR]: ACCEPT FAILED ", err)
 			continue
 		}
+		if s.connManager.ConnectedNum() >= s.MaxConn {
+			conn.Close()
+			continue
+		}
 		// create a 'connection' obj and bind task to it
-		estConn := NewConnection(conn, connID, s.msgHandler) // assume no bug in NewConnection()
+		estConn := NewConnection(s, conn, connID, s.msgHandler) // assume no bug in NewConnection()
 		go estConn.Start()
 		connID++
 	}
@@ -75,11 +84,12 @@ func (s *Server) listenAndServe() {
 
 func NewServer(name string) iface.IServer {
 	return &Server{
-		Name:       name,
-		IPVersion:  "tcp4",
-		IP:         "127.0.0.1",
-		Port:       8848,
-		msgHandler: NewMsgHandler(5, 1024),
+		Name:        name,
+		IPVersion:   "tcp4",
+		IP:          "127.0.0.1",
+		Port:        8848,
+		msgHandler:  NewMsgHandler(5, 1024),
+		connManager: *NewConnManager(),
 
 		MaxConn:     1024,
 		MaxPackSize: 65535,
