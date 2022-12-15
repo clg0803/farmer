@@ -12,6 +12,10 @@ type IConnection interface {
 	GetRemoteAddr() net.Addr                         // get remote(client) addr
 	SendMsg(msgID uint32, data []byte) error         // send MSG to CLIENT
 	SendMsgWithBuff(msgID uint32, data []byte) error // send MSG to CLIENT
+
+	SetProperty(key string, value interface{})
+	GetProperty(key string) (interface{}, error)
+	DelProperty(key string)
 }
 
 type ToHandle func(conn *net.TCPConn, data []byte, length int) error //Client register ToHandle() with an IConnection

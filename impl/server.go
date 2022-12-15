@@ -4,7 +4,6 @@ import (
 	"farmer/iface"
 	"fmt"
 	"net"
-	"time"
 )
 
 type Server struct {
@@ -36,9 +35,7 @@ func (s *Server) Serve() {
 	s.Start()
 	// TODO: serve()
 	// do sth. while handling requests
-	for {
-		time.Sleep(10 * time.Second)
-	}
+	select {}
 }
 
 func (s *Server) AddRouter(msgId uint32, r iface.IRouter) {

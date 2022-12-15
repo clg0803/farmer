@@ -5,6 +5,7 @@ import (
 	"farmer/iface"
 	"fmt"
 	"net"
+	"sync"
 )
 
 type Connection struct {
@@ -17,6 +18,9 @@ type Connection struct {
 	msgHandler  iface.IMsgHandler // for R/W separated
 	msgChan     chan []byte
 	msgBuffChan chan []byte
+
+	props     map[string]interface{} // maintains connection's properties
+	propsLock sync.RWMutex
 }
 
 // Start -- work for each connection
@@ -26,12 +30,12 @@ func (c *Connection) Start() {
 	go c.readAndHandle()
 	go c.startWriter()
 	c.server.CallOnConnStart(c)
-	for {
-		select {
-		case <-c.exitChan:
-			return
-		}
-	}
+	//for {
+	//	select {
+	//	case <-c.exitChan:
+	//		return
+	//	}
+	//}
 }
 
 func (c *Connection) Stop() {
@@ -90,17 +94,38 @@ func (c *Connection) SendMsgWithBuff(msgID uint32, data []byte) error {
 	return nil
 }
 
+func (c *Connection) SetProperty(k string, v interface{}) {
+	c.propsLock.Lock()
+	defer c.propsLock.Unlock()
+	c.props[k] = v
+}
+func (c *Connection) GetProperty(k string) (interface{}, error) {
+	c.propsLock.Lock()
+	defer c.propsLock.Unlock()
+	if v, ok := c.props[k]; ok {
+		return v, nil
+	} else {
+		return nil, errors.New("NO PROPERTY FOUND")
+	}
+}
+
+func (c *Connection) DelProperty(k string) {
+	c.propsLock.Lock()
+	defer c.propsLock.Unlock()
+	delete(c.props, k)
+}
+
 // read from client and 'farm' it
 func (c *Connection) readAndHandle() {
 	fmt.Println(":[SUCCESS]: START READING ...")
-	defer c.Stop() // in case of failing
 	defer fmt.Println(":[SUCCESS]: STOP READING FROM ", c.GetRemoteAddr().String())
+	defer c.Stop() // in case of failing
 	for {
 		pker := NewPacker()
 		msg, err := pker.ReadAndUnpackToMsg(c)
 		if err != nil {
 			fmt.Println(":[ERR]: COVERT DATA TO MSG ERR", err)
-			continue
+			break
 		}
 		req := Request{
 			conn: c,
@@ -147,8 +172,11 @@ func NewConnection(s iface.IServer, tcpConn *net.TCPConn, connID uint32, msgHand
 
 		isClosed: false,
 		exitChan: make(chan bool, 1),
+
+		props: make(map[string]interface{}),
 	}
 	if c.server != nil {
+		// new conn in CLIENT to get data from(no SERVER)
 		c.server.GetConnMgr().Add(&c)
 	}
 	return &c

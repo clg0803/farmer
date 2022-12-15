@@ -38,12 +38,22 @@ func (hr *HelloRouter) Handle(r iface.IRequest) {
 
 func onConnStart(conn iface.IConnection) {
 	fmt.Println(":[HOOK]: `onConnStart` IS CALLED")
+	conn.SetProperty("Name", "Jame")
+	conn.SetProperty("Home", "www.moneytiger.fun")
 	if err := conn.SendMsg(666, []byte("RISE UP")); err != nil {
 		println(err)
 	}
 }
 
 func onConnEnd(conn iface.IConnection) {
+	if name, err := conn.GetProperty("Name"); err == nil {
+		fmt.Println("Conn Property Name = ", name)
+		conn.DelProperty("Name")
+	}
+	if home, err := conn.GetProperty("Home"); err == nil {
+		fmt.Println("Conn Property Home = ", home)
+		conn.DelProperty("Home")
+	}
 	fmt.Println(":[HOOK]: `onConnEnd` IS CALLED")
 }
 
